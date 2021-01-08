@@ -2,6 +2,9 @@ const fs = require('fs');
 const http = require('http');
 const url = require('url');
 
+
+const replaceTemplate = require('./modules/ReplaceTemplate');
+
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -43,19 +46,7 @@ console.log("Will read file");*/
 
 //Server
 
-const replaceTemplate = (template, product) => {
-  let output = template.replace(/{%PRODUCTNAME%}/g, product.productName);
-  output = output.replace(/{%IMAGE%}/g, product.image);
-  output = output.replace(/{%PRICE%}/g, product.price);
-  output = output.replace(/{%FROM%}/g, product.from);
-  output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
-  output = output.replace(/{%QUANTITY%}/g, product.quantity);
-  output = output.replace(/{%DESCRIPTION%}/g, product.description);
-  if(!product.organic) {
-    output = output.replace(/{%NOT-ORGANIC%}/g,'not-organic');
-  }
-  return output;
-}
+
 
 const templateCard = fs.readFileSync('./templates/templateCard.html', 'utf-8');
 const templateOverview = fs.readFileSync('./templates/templateOverview.html', 'utf-8');
@@ -65,7 +56,10 @@ const data = fs.readFileSync('./dev-data/data.json', 'utf-8');
   const dataObj = JSON.parse(data);
 
 const server = http.createServer((req, res) => {
-  const pathname = req.url;
+  //const pathname = req.url;
+
+  //console.log(req.url);
+  const {query, pathname} = url.parse(req.url, true);
 
   //Overview page
   if(pathname === '/' || pathname === '/overview'){
@@ -83,7 +77,16 @@ const server = http.createServer((req, res) => {
 
   //product page
   else if(pathname === '/product'){
-    res.end('This is the product');
+
+    res.writeHead(200, {
+      'content-type': 'text/html'
+    });
+
+    const product = dataObj[query.id];
+
+    const output = replaceTemplate(templateProduct, product);
+    res.end(output);
+    //console.log(query);
   }
 
   //api page
